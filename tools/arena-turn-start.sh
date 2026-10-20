@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # tools/arena-turn-start.sh
 #
-# Arena turn-start sync + harness repair for the ArenaAgentNotifier repository.
+# Arena turn-start sync + harness repair for the FlowLauncherPlugin-PlayniteLibrary repository.
 #
 # Run at the START of every turn:   bash tools/arena-turn-start.sh
 #
@@ -42,13 +42,21 @@
 set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BRANCH="yourbranch"
-BASE_COMMIT="basecommit"
+BRANCH="arena/38b2e790-flowlauncherplugin-playnitelib"
+BASE_COMMIT="bcc2ebf242b74d50c2123693080312abf6771937"
 
 # Files whose absence means "the snapshot restore is incomplete".
 # Keep this in sync with docs/AGENT_NOTES.md §2 when load-bearing files appear.
 KEY_FILES=(
-    keyfile
+    "data/plugin.json"
+    "src/run.py"
+    "src/plugin/__main__.py"
+    "src/plugin/playnite.py"
+    "src/plugin/matcher.py"
+    "src/plugin/library_source.py"
+    "src/plugin/library_server.py"
+    "src/plugin/results.py"
+    "src/plugin/settings.py"
 )
 
 cd "$REPO_ROOT" || exit 1
@@ -91,7 +99,7 @@ if ! git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
     echo "== no remote branch '$BRANCH' yet (first turn, or the user has not pushed)"
     REMOTE=""
 else
-    REMOTE="$(git rev-parse "origin/$BRANCH" 2>/dev/null || echo "")"
+    REMOTE="$(git rev-parse --verify "origin/$BRANCH" 2>/dev/null || echo "")"
 fi
 
 # A depth-1 harness re-clone truncates BOTH sides at one commit each, so
@@ -100,7 +108,9 @@ fi
 if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
     echo "   shallow clone detected — unshallowing before classifying"
     git fetch --unshallow origin --quiet 2>/dev/null || true
-    REMOTE="$(git rev-parse "origin/$BRANCH" 2>/dev/null || echo "$REMOTE")"
+    if [ -n "$REMOTE" ]; then
+        REMOTE="$(git rev-parse --verify "origin/$BRANCH" 2>/dev/null || echo "")"
+    fi
 fi
 
 HEAD_NOW="$(git rev-parse HEAD)"
@@ -170,9 +180,9 @@ for file in "${KEY_FILES[@]}"; do
 done
 
 # Any JSON we ship must at least parse; a corrupted manifest is invisible otherwise.
-if [ -f extension/manifest.json ]; then
-    if ! python3 -c 'import json,sys; json.load(open("extension/manifest.json"))'; then
-        echo "!! extension/manifest.json is not valid JSON"
+if [ -f data/plugin.json ]; then
+    if ! python3 -c 'import json,sys; json.load(open("data/plugin.json"))'; then
+        echo "!! data/plugin.json is not valid JSON"
         missing=1
     fi
 fi
