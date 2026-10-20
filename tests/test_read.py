@@ -54,7 +54,9 @@ def test_games_uses_in_memory_cache_on_repeated_calls(tmp_path):
     with patch("playnite.LiteDatabase", wraps=LiteDatabase) as spy_db:
         second_read = lib.games(include_hidden=True)
         visible_read = lib.games(include_hidden=False)
+        installed_read = lib.games(include_hidden=False, include_uninstalled=False)
         assert spy_db.call_count == 0
 
     assert second_read == first_read
     assert len(visible_read) <= len(first_read)
+    assert all(game.is_installed for game in installed_read)

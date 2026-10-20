@@ -183,8 +183,7 @@ class PlayniteLibrary:
         self._cached_sources_key: Path | None = None
         self._cached_sources: dict = {}
         self._cached_games_key: tuple[Path, Path | None] | None = None
-        self._cached_all_games: list[Game] = []
-        self._cached_visible_games: list[Game] = []
+        self._cached_game_subsets: dict[tuple[bool, bool], list[Game]] = {}
 
     @property
     def library_dir(self) -> Path:
@@ -247,7 +246,7 @@ class PlayniteLibrary:
         except LiteDbError:
             return {}
 
-    def games(self, include_hidden: bool = False) -> "list[Game]":
+    def games(self, include_hidden: bool = False, include_uninstalled: bool = True) -> "list[Game]":
         sources = self.source_names()
         cached_games_path = self.cached_copy(self.games_db)
         cache_key = (cached_games_path, self._cached_sources_key)
@@ -255,8 +254,13 @@ class PlayniteLibrary:
             with LiteDatabase(cached_games_path) as db:
                 all_games = [Game.from_doc(doc, sources) for doc in db["Game"]]
             all_games.sort(key=lambda game: game.sort_key)
-            self._cached_all_games = all_games
-            self._cached_visible_games = [game for game in all_games if not game.hidden]
+            visible_games = [game for game in all_games if not game.hidden]
+            self._cached_game_subsets = {
+                (True, True): all_games,
+                (False, True): visible_games,
+                (True, False): [game for game in all_games if game.is_installed],
+                (False, False): [game for game in visible_games if game.is_installed],
+            }
             self._cached_games_key = cache_key
             _cached_media_path.cache_clear()
-        return list(self._cached_all_games if include_hidden else self._cached_visible_games)
+        return list(self._cached_game_subsets[(bool(include_hidden), bool(include_uninstalled))])
