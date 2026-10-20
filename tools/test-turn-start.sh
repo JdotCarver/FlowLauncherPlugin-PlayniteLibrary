@@ -20,8 +20,8 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-BRANCH="yourbranch"
-BASE_COMMIT="basecommit"
+BRANCH="arena/38b2e790-flowlauncherplugin-playnitelib"
+BASE_COMMIT="bcc2ebf242b74d50c2123693080312abf6771937"
 
 PASS=0
 FAIL=0
