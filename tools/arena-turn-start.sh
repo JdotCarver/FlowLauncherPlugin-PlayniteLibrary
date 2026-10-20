@@ -52,6 +52,7 @@ KEY_FILES=(
     "src/run.py"
     "src/plugin/__main__.py"
     "src/plugin/playnite.py"
+    "src/plugin/matcher.py"
     "src/plugin/library_source.py"
     "src/plugin/library_server.py"
     "src/plugin/results.py"
